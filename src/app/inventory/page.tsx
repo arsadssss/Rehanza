@@ -44,7 +44,7 @@ import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 
-// --- PRICING CONSTANTS (Future-proof: can be moved to Settings) ---
+// --- PRICING CONSTANTS ---
 const PRICING_CONSTANTS = {
   PROMO_ADS: 20,
   TAX_OTHER: 10,
@@ -94,23 +94,25 @@ export default function InventoryPage() {
   // ✅ FETCH PRODUCTS
   const fetchInventory = async () => {
     setIsLoading(true)
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false })
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false })
 
-    if (error) {
+      if (error) throw error
+      setInventory(data || [])
+    } catch (error: any) {
       console.error("Supabase Fetch Error:", error)
       toast({
         variant: "destructive",
-        title: "Error fetching data",
-        description: error.message
+        title: "Database Error",
+        description: error.message || "Failed to fetch products. Ensure the table exists."
       })
       setInventory([])
-    } else {
-      setInventory(data || [])
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
 
   useEffect(() => {
@@ -141,34 +143,31 @@ export default function InventoryPage() {
     }
 
     setIsSaving(true)
-    const margin_value = MARGIN_OPTIONS[newProduct.marginType]
-    
-    const payload = {
-      sku: newProduct.sku,
-      cost: Number(newProduct.cost),
-      stock: Number(newProduct.stock),
-      margin_type: newProduct.marginType,
-      margin_value: margin_value,
-      meesho_price: calculatedPrices.meesho,
-      flipkart_price: calculatedPrices.flipkart,
-      amazon_price: calculatedPrices.amazon,
-    }
+    try {
+      const margin_value = MARGIN_OPTIONS[newProduct.marginType]
+      
+      const payload = {
+        sku: newProduct.sku,
+        cost: Number(newProduct.cost),
+        stock: Number(newProduct.stock),
+        margin_type: newProduct.marginType,
+        margin_value: margin_value,
+        meesho_price: calculatedPrices.meesho,
+        flipkart_price: calculatedPrices.flipkart,
+        amazon_price: calculatedPrices.amazon,
+      }
 
-    const { error } = await supabase
-      .from("products")
-      .insert([payload])
+      const { error } = await supabase
+        .from("products")
+        .insert([payload])
 
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Insert Failed",
-        description: error.message
-      })
-    } else {
+      if (error) throw error
+
       toast({
         title: "Product Added",
         description: `${newProduct.sku} has been added successfully.`
       })
+      
       setIsModalOpen(false)
       // Reset form
       setNewProduct({
@@ -177,10 +176,17 @@ export default function InventoryPage() {
         stock: 0,
         marginType: "Pack of 1",
       })
-      // Refresh inventory from DB to ensure state is perfectly synced
+      // Refresh inventory
       fetchInventory()
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Insert Failed",
+        description: error.message
+      })
+    } finally {
+      setIsSaving(false)
     }
-    setIsSaving(false)
   }
 
   const filteredProducts = inventory.filter((p) =>
@@ -190,27 +196,28 @@ export default function InventoryPage() {
   const handleDeleteSelected = async () => {
     if (selectedIds.length === 0) return
 
-    const { error } = await supabase
-      .from("products")
-      .delete()
-      .in("id", selectedIds)
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .in("id", selectedIds)
 
-    if (error) {
+      if (error) throw error
+
+      toast({
+        title: "Deleted Successfully",
+        description: `${selectedIds.length} product(s) removed`
+      })
+
+      setSelectedIds([])
+      fetchInventory()
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Delete Failed",
         description: error.message
       })
-      return
     }
-
-    toast({
-      title: "Deleted Successfully",
-      description: `${selectedIds.length} product(s) removed`
-    })
-
-    setSelectedIds([])
-    fetchInventory()
   }
 
   const toggleSelectAll = () => {
@@ -463,9 +470,15 @@ export default function InventoryPage() {
                       <FileSpreadsheet className="h-8 w-8 text-slate-300" />
                     </div>
                     <h3 className="text-lg font-bold text-slate-900">No products found</h3>
-                    <p className="text-sm text-slate-500 mt-1 max-w-xs mx-auto">
-                      Try searching for a different SKU or add a new product using the button above.
+                    <p className="text-sm text-slate-500 mt-1 max-w-xs mx-auto mb-6">
+                      Try searching for a different SKU or add a new product.
                     </p>
+                    <Button 
+                      onClick={() => setIsModalOpen(true)}
+                      className="bg-primary rounded-xl"
+                    >
+                      <Plus className="h-4 w-4 mr-2" /> Add First Product
+                    </Button>
                   </TableCell>
                 </TableRow>
               )}
