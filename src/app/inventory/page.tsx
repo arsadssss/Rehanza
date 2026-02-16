@@ -52,14 +52,7 @@ const PRICING_DEFAULTS = {
   AMAZON_SHIP: 80,
 }
 
-const MARGIN_OPTIONS: Record<string, number> = {
-  "Pack of 1": 20,
-  "Pack of 2": 30,
-  "Pack of 3": 45,
-  "Pack of 4": 60,
-  "Pack of 6": 80,
-  "Pack of 12": 120,
-}
+const MARGIN_OPTIONS = [20, 30, 45, 50, 60, 80, 100, 150, 200, 300, 500]
 
 type ProductRow = {
   id: string
@@ -91,7 +84,7 @@ export default function InventoryPage() {
     sku: "",
     cost: 0,
     stock: 0,
-    marginType: "Pack of 1",
+    margin: 20,
   })
 
   const fetchInventory = async () => {
@@ -123,7 +116,7 @@ export default function InventoryPage() {
 
   const calculatedPrices = useMemo(() => {
     const cost = Number(newProduct.cost) || 0
-    const margin = MARGIN_OPTIONS[newProduct.marginType] || 0
+    const margin = Number(newProduct.margin) || 0
     
     const basePrice = cost + PRICING_DEFAULTS.PROMO_ADS + PRICING_DEFAULTS.TAX_OTHER + PRICING_DEFAULTS.PACKING + margin
     const amazonPrice = basePrice + PRICING_DEFAULTS.AMAZON_SHIP
@@ -134,7 +127,7 @@ export default function InventoryPage() {
       amazon: amazonPrice,
       margin_value: margin
     }
-  }, [newProduct.cost, newProduct.marginType])
+  }, [newProduct.cost, newProduct.margin])
 
   const handleAddProduct = async () => {
     if (!newProduct.sku) {
@@ -144,13 +137,13 @@ export default function InventoryPage() {
 
     setIsSaving(true)
     try {
-      const margin_value = MARGIN_OPTIONS[newProduct.marginType]
+      const margin_value = Number(newProduct.margin)
       
       const payload = {
         sku: newProduct.sku,
         cost: Number(newProduct.cost),
         stock: Number(newProduct.stock),
-        margin_type: newProduct.marginType,
+        margin_type: `Flat ₹${margin_value}`,
         margin_value: margin_value,
         promo_ads: PRICING_DEFAULTS.PROMO_ADS,
         tax_other: PRICING_DEFAULTS.TAX_OTHER,
@@ -182,7 +175,7 @@ export default function InventoryPage() {
         sku: "",
         cost: 0,
         stock: 0,
-        marginType: "Pack of 1",
+        margin: 20,
       })
       fetchInventory()
     } catch (error: any) {
@@ -304,17 +297,17 @@ export default function InventoryPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="marginType" className="text-sm font-semibold">Margin Type</Label>
+                  <Label htmlFor="margin" className="text-sm font-semibold">Margin (₹)</Label>
                   <Select 
-                    value={newProduct.marginType} 
-                    onValueChange={(val) => setNewProduct({...newProduct, marginType: val})}
+                    value={String(newProduct.margin)} 
+                    onValueChange={(val) => setNewProduct({...newProduct, margin: Number(val)})}
                   >
                     <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Select Pack" />
+                      <SelectValue placeholder="Select Margin" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.keys(MARGIN_OPTIONS).map(opt => (
-                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      {MARGIN_OPTIONS.map(opt => (
+                        <SelectItem key={opt} value={String(opt)}>{opt}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
