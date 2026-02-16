@@ -1,0 +1,29 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "product-1",
+      "description": "Premium Cotton T-Shirt",
+      "imageUrl": "https://picsum.photos/seed/p1/400/400",
+      "imageHint": "cotton t-shirt"
+    },
+    {
+      "id": "product-2",
+      "description": "Wireless Bluetooth Earbuds",
+      "imageUrl": "https://picsum.photos/seed/p2/400/400",
+      "imageHint": "wireless earbuds"
+    },
+    {
+      "id": "product-3",
+      "description": "Smart Fitness Tracker",
+      "imageUrl": "https://picsum.photos/seed/p3/400/400",
+      "imageHint": "fitness tracker"
+    },
+    {
+      "id": "product-4",
+      "description": "Ergonomic Office Chair",
+      "imageUrl": "https://picsum.photos/seed/p4/400/400",
+      "imageHint": "office chair"
+    }
+  ]
+}
