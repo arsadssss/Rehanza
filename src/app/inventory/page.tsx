@@ -1,19 +1,16 @@
 
 "use client"
 
-import { useState, useRef, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
 import {
   Search,
   Plus,
-  Filter,
   MoreVertical,
   Trash2,
   FileSpreadsheet,
   Package,
-  IndianRupee,
-  Loader2,
-  CheckCircle2
+  Loader2
 } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
@@ -67,7 +64,6 @@ const MARGIN_OPTIONS: Record<string, number> = {
 type ProductRow = {
   id: string
   sku: string
-  name: string
   cost: number
   stock: number
   margin_type: string
@@ -90,7 +86,6 @@ export default function InventoryPage() {
   // New Product Form State
   const [newProduct, setNewProduct] = useState({
     sku: "",
-    name: "",
     cost: 0,
     stock: 0,
     marginType: "Pack of 1",
@@ -111,13 +106,9 @@ export default function InventoryPage() {
         title: "Error fetching data",
         description: error.message
       })
+      setInventory([])
     } else {
-      // Map name to sku if name is missing for display
-      const formatted = (data || []).map(p => ({
-        ...p,
-        name: p.name || p.sku // Fallback to SKU as name
-      }))
-      setInventory(formatted)
+      setInventory(data || [])
     }
     setIsLoading(false)
   }
@@ -154,7 +145,6 @@ export default function InventoryPage() {
     
     const payload = {
       sku: newProduct.sku,
-      name: newProduct.name || newProduct.sku,
       cost: Number(newProduct.cost),
       stock: Number(newProduct.stock),
       margin_type: newProduct.marginType,
@@ -164,10 +154,9 @@ export default function InventoryPage() {
       amazon_price: calculatedPrices.amazon,
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("products")
       .insert([payload])
-      .select()
 
     if (error) {
       toast({
@@ -180,24 +169,22 @@ export default function InventoryPage() {
         title: "Product Added",
         description: `${newProduct.sku} has been added successfully.`
       })
-      // Update local state without reload
-      setInventory(prev => [data[0], ...prev])
       setIsModalOpen(false)
       // Reset form
       setNewProduct({
         sku: "",
-        name: "",
         cost: 0,
         stock: 0,
         marginType: "Pack of 1",
       })
+      // Refresh inventory from DB to ensure state is perfectly synced
+      fetchInventory()
     }
     setIsSaving(false)
   }
 
   const filteredProducts = inventory.filter((p) =>
-    (p.sku || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.name || "").toLowerCase().includes(searchTerm.toLowerCase())
+    (p.sku || "").toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const handleDeleteSelected = async () => {
@@ -217,16 +204,13 @@ export default function InventoryPage() {
       return
     }
 
-    setInventory(prev =>
-      prev.filter(p => !selectedIds.includes(p.id))
-    )
-
     toast({
       title: "Deleted Successfully",
       description: `${selectedIds.length} product(s) removed`
     })
 
     setSelectedIds([])
+    fetchInventory()
   }
 
   const toggleSelectAll = () => {
@@ -365,7 +349,7 @@ export default function InventoryPage() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search by SKU or name..."
+                placeholder="Search by SKU..."
                 className="pl-10 rounded-xl border-slate-200 h-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -398,7 +382,7 @@ export default function InventoryPage() {
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
-                <TableHead className="font-semibold text-slate-700">SKU / Product</TableHead>
+                <TableHead className="font-semibold text-slate-700">SKU / Pack</TableHead>
                 <TableHead className="font-semibold text-slate-700">Stock</TableHead>
                 <TableHead className="font-semibold text-slate-700">Meesho</TableHead>
                 <TableHead className="font-semibold text-slate-700">Flipkart</TableHead>
