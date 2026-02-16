@@ -1,7 +1,6 @@
-
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Search, Plus, Filter, MoreVertical, AlertCircle, Upload, Trash2, FileSpreadsheet } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { 
@@ -19,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 import * as XLSX from "xlsx"
 import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/lib/supabase"
 
 const initialProducts = [
   { id: 'PROD-001', name: 'Premium Cotton T-Shirt', sku: 'TSH-PC-BLU', category: 'Apparel', stock: 124, price: 499, status: 'In Stock' },
@@ -34,6 +34,16 @@ export default function InventoryPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
+
+  // Example Supabase test (can be removed later)
+  useEffect(() => {
+    const testConnection = async () => {
+      const { data, error } = await supabase.from("products").select("*")
+      if (error) console.error("Supabase Error:", error)
+      else if (data && data.length > 0) console.log("Supabase Data:", data)
+    }
+    testConnection()
+  }, [])
 
   const filteredProducts = inventory.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -81,7 +91,6 @@ export default function InventoryPage() {
       }
     }
     reader.readAsBinaryString(file)
-    // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
