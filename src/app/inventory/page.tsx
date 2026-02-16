@@ -45,7 +45,6 @@ import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 
 // --- PRICING CONSTANTS ---
-// These are used as defaults and for calculations
 const PRICING_DEFAULTS = {
   PROMO_ADS: 20,
   TAX_OTHER: 10,
@@ -88,7 +87,6 @@ export default function InventoryPage() {
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
-  // New Product Form State
   const [newProduct, setNewProduct] = useState({
     sku: "",
     cost: 0,
@@ -96,7 +94,6 @@ export default function InventoryPage() {
     marginType: "Pack of 1",
   })
 
-  // ✅ FETCH PRODUCTS (Using products_v2)
   const fetchInventory = async () => {
     setIsLoading(true)
     try {
@@ -124,12 +121,10 @@ export default function InventoryPage() {
     fetchInventory()
   }, [])
 
-  // ✅ CALCULATE PRICES
   const calculatedPrices = useMemo(() => {
     const cost = Number(newProduct.cost) || 0
     const margin = MARGIN_OPTIONS[newProduct.marginType] || 0
     
-    // Formula: cost + promo + tax + packing + margin
     const basePrice = cost + PRICING_DEFAULTS.PROMO_ADS + PRICING_DEFAULTS.TAX_OTHER + PRICING_DEFAULTS.PACKING + margin
     const amazonPrice = basePrice + PRICING_DEFAULTS.AMAZON_SHIP
 
@@ -141,7 +136,6 @@ export default function InventoryPage() {
     }
   }, [newProduct.cost, newProduct.marginType])
 
-  // ✅ ADD PRODUCT HANDLER
   const handleAddProduct = async () => {
     if (!newProduct.sku) {
       toast({ variant: "destructive", title: "SKU is required" })
@@ -180,18 +174,16 @@ export default function InventoryPage() {
 
       toast({
         title: "Product Added",
-        description: `${newProduct.sku} has been added to products_v2.`
+        description: `${newProduct.sku} has been added successfully.`
       })
       
       setIsModalOpen(false)
-      // Reset form
       setNewProduct({
         sku: "",
         cost: 0,
         stock: 0,
         marginType: "Pack of 1",
       })
-      // Refresh inventory
       fetchInventory()
     } catch (error: any) {
       toast({
@@ -203,10 +195,6 @@ export default function InventoryPage() {
       setIsSaving(false)
     }
   }
-
-  const filteredProducts = inventory.filter((p) =>
-    (p.sku || "").toLowerCase().includes(searchTerm.toLowerCase())
-  )
 
   const handleDeleteSelected = async () => {
     if (selectedIds.length === 0) return
@@ -234,6 +222,10 @@ export default function InventoryPage() {
       })
     }
   }
+
+  const filteredProducts = inventory.filter((p) =>
+    (p.sku || "").toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredProducts.length && filteredProducts.length > 0) {
@@ -329,7 +321,6 @@ export default function InventoryPage() {
                 </div>
               </div>
 
-              {/* Real-time Pricing Preview */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Calculated Channel Prices</p>
                 <div className="grid grid-cols-3 gap-4">
