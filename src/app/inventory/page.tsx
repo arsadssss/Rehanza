@@ -10,7 +10,8 @@ import {
   Trash2,
   FileSpreadsheet,
   Package,
-  Loader2
+  Loader2,
+  X
 } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
@@ -360,6 +361,14 @@ export default function InventoryPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
 
             {selectedIds.length > 0 && (
@@ -406,63 +415,61 @@ export default function InventoryPage() {
                     <p className="mt-2 text-sm text-slate-500">Loading inventory...</p>
                   </TableCell>
                 </TableRow>
-              ) : filteredProducts.map(product => (
-                <TableRow key={product.id} className="hover:bg-slate-50/50 border-slate-50 group">
-                  <TableCell className="pl-6">
-                    <Checkbox
-                      checked={selectedIds.includes(product.id)}
-                      onCheckedChange={() =>
-                        toggleSelectRow(product.id)
-                      }
-                    />
-                  </TableCell>
+              ) : filteredProducts.length > 0 ? (
+                filteredProducts.map(product => (
+                  <TableRow key={product.id} className="hover:bg-slate-50/50 border-slate-50 group">
+                    <TableCell className="pl-6">
+                      <Checkbox
+                        checked={selectedIds.includes(product.id)}
+                        onCheckedChange={() => toggleSelectRow(product.id)}
+                      />
+                    </TableCell>
 
-                  <TableCell className="py-4">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-slate-900">{product.sku}</span>
-                      <span className="text-xs text-slate-500 font-medium">{product.margin_type}</span>
-                    </div>
-                  </TableCell>
+                    <TableCell className="py-4">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-900">{product.sku}</span>
+                        <span className="text-xs text-slate-500 font-medium">{product.margin_type}</span>
+                      </div>
+                    </TableCell>
 
-                  <TableCell>
-                    <span
-                      className={cn(
-                        "font-bold px-3 py-1 rounded-full text-xs",
-                        product.stock <= 15
-                          ? "bg-rose-50 text-rose-600"
-                          : "bg-emerald-50 text-emerald-600"
-                      )}
-                    >
-                      {product.stock}
-                    </span>
-                  </TableCell>
+                    <TableCell>
+                      <span
+                        className={cn(
+                          "font-bold px-3 py-1 rounded-full text-xs",
+                          product.stock <= 15
+                            ? "bg-rose-50 text-rose-600"
+                            : "bg-emerald-50 text-emerald-600"
+                        )}
+                      >
+                        {product.stock}
+                      </span>
+                    </TableCell>
 
-                  <TableCell className="font-medium text-slate-600">₹{product.meesho_price}</TableCell>
-                  <TableCell className="font-medium text-slate-600">₹{product.flipkart_price}</TableCell>
-                  <TableCell className="font-bold text-primary">₹{product.amazon_price}</TableCell>
+                    <TableCell className="font-medium text-slate-600">₹{product.meesho_price}</TableCell>
+                    <TableCell className="font-medium text-slate-600">₹{product.flipkart_price}</TableCell>
+                    <TableCell className="font-bold text-primary">₹{product.amazon_price}</TableCell>
 
-                  <TableCell>
-                    <Badge
-                      className={cn(
-                        "font-medium border-none px-3 py-1 rounded-full",
-                        product.stock > 15 && "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
-                        product.stock <= 15 && product.stock > 0 && "bg-amber-100 text-amber-700 hover:bg-amber-100",
-                        product.stock === 0 && "bg-rose-100 text-rose-700 hover:bg-rose-100"
-                      )}
-                    >
-                      {product.stock === 0 ? "Out of Stock" : product.stock <= 15 ? "Low Stock" : "In Stock"}
-                    </Badge>
-                  </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={cn(
+                          "font-medium border-none px-3 py-1 rounded-full",
+                          product.stock > 15 && "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
+                          product.stock <= 15 && product.stock > 0 && "bg-amber-100 text-amber-700 hover:bg-amber-100",
+                          product.stock === 0 && "bg-rose-100 text-rose-700 hover:bg-rose-100"
+                        )}
+                      >
+                        {product.stock === 0 ? "Out of Stock" : product.stock <= 15 ? "Low Stock" : "In Stock"}
+                      </Badge>
+                    </TableCell>
 
-                  <TableCell className="pr-6">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 group-hover:text-slate-900 transition-colors">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-
-              {!isLoading && filteredProducts.length === 0 && (
+                    <TableCell className="pr-6">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 group-hover:text-slate-900 transition-colors">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-20">
                     <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -470,14 +477,16 @@ export default function InventoryPage() {
                     </div>
                     <h3 className="text-lg font-bold text-slate-900">No products found</h3>
                     <p className="text-sm text-slate-500 mt-1 max-w-xs mx-auto mb-6">
-                      Try searching for a different SKU or add a new product.
+                      {searchTerm ? "Try searching for a different SKU." : "Start by adding your first product to the inventory."}
                     </p>
-                    <Button 
-                      onClick={() => setIsModalOpen(true)}
-                      className="bg-primary rounded-xl"
-                    >
-                      <Plus className="h-4 w-4 mr-2" /> Add First Product
-                    </Button>
+                    {!searchTerm && (
+                      <Button 
+                        onClick={() => setIsModalOpen(true)}
+                        className="bg-primary rounded-xl"
+                      >
+                        <Plus className="h-4 w-4 mr-2" /> Add First Product
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               )}
