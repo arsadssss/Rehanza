@@ -45,7 +45,8 @@ import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 
 // --- PRICING CONSTANTS ---
-const PRICING_CONSTANTS = {
+// These are used as defaults and for calculations
+const PRICING_DEFAULTS = {
   PROMO_ADS: 20,
   TAX_OTHER: 10,
   PACKING: 15,
@@ -68,6 +69,10 @@ type ProductRow = {
   stock: number
   margin_type: string
   margin_value: number
+  promo_ads: number
+  tax_other: number
+  packing: number
+  amazon_ship: number
   meesho_price: number
   flipkart_price: number
   amazon_price: number
@@ -91,12 +96,12 @@ export default function InventoryPage() {
     marginType: "Pack of 1",
   })
 
-  // ✅ FETCH PRODUCTS
+  // ✅ FETCH PRODUCTS (Using products_v2)
   const fetchInventory = async () => {
     setIsLoading(true)
     try {
       const { data, error } = await supabase
-        .from("products")
+        .from("products_v2")
         .select("*")
         .order("created_at", { ascending: false })
 
@@ -107,7 +112,7 @@ export default function InventoryPage() {
       toast({
         variant: "destructive",
         title: "Database Error",
-        description: error.message || "Failed to fetch products. Ensure the table exists."
+        description: error.message || "Failed to fetch products. Ensure the products_v2 table exists."
       })
       setInventory([])
     } finally {
@@ -124,8 +129,9 @@ export default function InventoryPage() {
     const cost = Number(newProduct.cost) || 0
     const margin = MARGIN_OPTIONS[newProduct.marginType] || 0
     
-    const basePrice = cost + PRICING_CONSTANTS.PROMO_ADS + PRICING_CONSTANTS.TAX_OTHER + PRICING_CONSTANTS.PACKING + margin
-    const amazonPrice = basePrice + PRICING_CONSTANTS.AMAZON_SHIP
+    // Formula: cost + promo + tax + packing + margin
+    const basePrice = cost + PRICING_DEFAULTS.PROMO_ADS + PRICING_DEFAULTS.TAX_OTHER + PRICING_DEFAULTS.PACKING + margin
+    const amazonPrice = basePrice + PRICING_DEFAULTS.AMAZON_SHIP
 
     return {
       meesho: basePrice,
@@ -152,20 +158,29 @@ export default function InventoryPage() {
         stock: Number(newProduct.stock),
         margin_type: newProduct.marginType,
         margin_value: margin_value,
+        promo_ads: PRICING_DEFAULTS.PROMO_ADS,
+        tax_other: PRICING_DEFAULTS.TAX_OTHER,
+        packing: PRICING_DEFAULTS.PACKING,
+        amazon_ship: PRICING_DEFAULTS.AMAZON_SHIP,
         meesho_price: calculatedPrices.meesho,
         flipkart_price: calculatedPrices.flipkart,
         amazon_price: calculatedPrices.amazon,
       }
 
       const { error } = await supabase
-        .from("products")
+        .from("products_v2")
         .insert([payload])
 
-      if (error) throw error
+      if (error) {
+        if (error.code === '23505') {
+          throw new Error("A product with this SKU already exists.")
+        }
+        throw error
+      }
 
       toast({
         title: "Product Added",
-        description: `${newProduct.sku} has been added successfully.`
+        description: `${newProduct.sku} has been added to products_v2.`
       })
       
       setIsModalOpen(false)
@@ -198,7 +213,7 @@ export default function InventoryPage() {
 
     try {
       const { error } = await supabase
-        .from("products")
+        .from("products_v2")
         .delete()
         .in("id", selectedIds)
 
@@ -221,7 +236,7 @@ export default function InventoryPage() {
   }
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === filteredProducts.length) {
+    if (selectedIds.length === filteredProducts.length && filteredProducts.length > 0) {
       setSelectedIds([])
     } else {
       setSelectedIds(filteredProducts.map(p => p.id))
@@ -242,7 +257,7 @@ export default function InventoryPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Inventory Management</h1>
           <p className="text-slate-500">
-            Real-time data from Supabase • Dynamic Pricing Engine
+            Connected to products_v2 • Dynamic Multi-Channel Pricing
           </p>
         </div>
         
